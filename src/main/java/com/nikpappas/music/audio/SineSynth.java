@@ -5,21 +5,18 @@ import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.nikpappas.music.MidiToFrequency.frequencyForMidi;
 import static java.lang.Math.*;
 
 public class SineSynth {
 
-    private Map<Integer, Double> ANGULAR_VELOCITY_LOOKUP= new HashMap<>();
-    {
-        ANGULAR_VELOCITY_LOOKUP.put(69, 440.0);
-        ANGULAR_VELOCITY_LOOKUP.put(70, 466.16);
-        ANGULAR_VELOCITY_LOOKUP.put(71, 493.88);
-        ANGULAR_VELOCITY_LOOKUP.put(72, 523.25);
-        ANGULAR_VELOCITY_LOOKUP.put(73, 554.37);
-        ANGULAR_VELOCITY_LOOKUP.put(74, 587.33);
-        ANGULAR_VELOCITY_LOOKUP.put(81, 880.0);
-    }
-    private Map<Integer, Clip> clips = new HashMap<>();
+    private final Map<Integer, Clip> clips = new HashMap<>();
+    public static final int MAX_VOL = 127;
+    public static final WaveGenerator DEFAULT_WAVE_GENERATOR = (angle) -> Long.valueOf(
+            round(sin(angle) * MAX_VOL))
+            .byteValue();
+
+    private final WaveGenerator waveGenerator;
 
     public static void main(String[] args) throws LineUnavailableException {
         SineSynth app = new SineSynth();
@@ -27,8 +24,16 @@ public class SineSynth {
         app.stop(220);
     }
 
+    public SineSynth() {
+        this(DEFAULT_WAVE_GENERATOR);
+    }
+
+    public SineSynth(WaveGenerator waveGenerator) {
+        this.waveGenerator = waveGenerator;
+    }
+
     public void play(int midinote) throws LineUnavailableException {
-        System.out.println("play("+midinote+")");
+        System.out.println("play(" + midinote + ")");
         Clip clip = clips.get(midinote);
         if (clip != null) {
             clip.stop();
@@ -40,7 +45,6 @@ public class SineSynth {
         int wavelengths = 40;
         int sampleRate = 11025;
         double timeIncrement = pow(sampleRate, -1);
-        byte[] buf = new byte[2 * midinote * wavelengths];
         AudioFormat af = new AudioFormat(
                 sampleRate,
                 8,  // sample size in bits
@@ -50,13 +54,14 @@ public class SineSynth {
         );
 
         int maxVol = 127;
-        double frequency = ANGULAR_VELOCITY_LOOKUP.getOrDefault(midinote, 220.0);
+        double frequency = frequencyForMidi(midinote);
 
-        long clipLength = round(((double) wavelengths*sampleRate)/frequency);
+        long clipLength = round(((double) wavelengths * sampleRate) / frequency);
+        byte[] buf = new byte[2 * (int) clipLength];
         System.out.println(clipLength);
         for (int i = 0; i < clipLength; i++) {
-            double angle = (i * timeIncrement)*2 *  frequency*PI;
-            buf[i * 2] = getByteValue(angle);
+            double angle = (i * timeIncrement) * 2 * frequency * PI;
+            buf[i * 2] = waveGenerator.generate(angle);
             buf[(i * 2) + 1] = buf[i * 2];
         }
 
@@ -69,7 +74,7 @@ public class SineSynth {
 
             clip.open(ais);
             clip.setFramePosition(0);
-            clip.loop( Clip.LOOP_CONTINUOUSLY );
+            clip.loop(Clip.LOOP_CONTINUOUSLY);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -77,29 +82,21 @@ public class SineSynth {
     }
 
 
-    /** Loops the current Clip until a commence false is passed. */
+    /**
+     * Loops the current Clip until a commence false is passed.
+     */
     public void stop(int midinote) {
-        System.out.println("stop("+midinote+")");
+        System.out.println("stop(" + midinote + ")");
         Clip clip = clips.get(midinote);
-        if ( clip != null ) {
+        if (clip != null) {
             clip.stop();
             clip.close();
         }
     }
 
-    /**
-     * Provides the byte value for this point in the sinusoidal wave.
-     */
-    private static byte getByteValue(double angle) {
-        int maxVol = 127;
-        return (new Integer(
-                (int) round(
-                        Math.sin(angle) * maxVol))).
-                byteValue();
-    }
-    public void close(){
-        clips.forEach((i,c)->{
-            if(c!=null){
+    public void close() {
+        clips.forEach((i, c) -> {
+            if (c != null) {
                 c.stop();
                 c.close();
             }

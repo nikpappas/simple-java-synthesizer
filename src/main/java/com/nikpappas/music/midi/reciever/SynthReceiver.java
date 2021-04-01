@@ -6,9 +6,20 @@ import javax.sound.midi.MidiMessage;
 import javax.sound.midi.Receiver;
 import javax.sound.sampled.LineUnavailableException;
 
-public class SynthReceiver implements Receiver {
-    private SineSynth sine = new SineSynth();
+import static java.lang.Math.round;
+import static java.lang.Math.sin;
 
+public class SynthReceiver implements Receiver {
+//    private SineSynth sine = new SineSynth();
+
+    private SineSynth sine = new SineSynth(a -> Long.valueOf(
+            round((.6 * sin(a) + .4 * squareTheSin(sin(a * 2))) * 127))
+            .byteValue());
+
+    public static double squareTheSin(double val){
+        return val>0?1.0:-1.0;
+
+    }
 
     @Override
     public void send(MidiMessage message, long timeStamp) {
