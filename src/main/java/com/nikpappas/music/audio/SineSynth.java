@@ -8,15 +8,23 @@ import java.util.Map;
 import static com.nikpappas.music.MidiToFrequency.frequencyForMidi;
 import static java.lang.Math.*;
 
-public class SineSynth {
+public class SineSynth implements MixedClipController {
 
     private final Map<Integer, Clip> clips = new HashMap<>();
     public static final int MAX_VOL = 127;
-    public static final WaveGenerator DEFAULT_WAVE_GENERATOR = (angle) -> Long.valueOf(
+    public static final WaveGenerator DEFAULT_WAVE_GENERATOR = (angle, time) -> Long.valueOf(
             round(sin(angle) * MAX_VOL))
             .byteValue();
 
     private final WaveGenerator waveGenerator;
+    private float volume = 1.0f;
+
+    public void setVolume(float volume) {
+        if (volume > 1) {
+            throw new IllegalArgumentException("Volume cannot be greater than 1");
+        }
+        this.volume = volume;
+    }
 
     public static void main(String[] args) throws LineUnavailableException {
         SineSynth app = new SineSynth();
@@ -53,15 +61,15 @@ public class SineSynth {
                 false  // bigendian
         );
 
-        int maxVol = 127;
         double frequency = frequencyForMidi(midinote);
 
         long clipLength = round(((double) wavelengths * sampleRate) / frequency);
         byte[] buf = new byte[2 * (int) clipLength];
         System.out.println(clipLength);
         for (int i = 0; i < clipLength; i++) {
-            double angle = (i * timeIncrement) * 2 * frequency * PI;
-            buf[i * 2] = waveGenerator.generate(angle);
+            double time = (i * timeIncrement);
+            double angle = time * 2 * frequency * PI;
+            buf[i * 2] = (byte) (volume * waveGenerator.generate(angle, time));
             buf[(i * 2) + 1] = buf[i * 2];
         }
 
@@ -74,6 +82,7 @@ public class SineSynth {
 
             clip.open(ais);
             clip.setFramePosition(0);
+//            clip.setLoopPoints(Long.valueOf(clipLength / 2).intValue(), -1);
             clip.loop(Clip.LOOP_CONTINUOUSLY);
 
         } catch (Exception e) {
