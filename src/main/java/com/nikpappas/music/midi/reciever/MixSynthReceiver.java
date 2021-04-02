@@ -2,12 +2,15 @@ package com.nikpappas.music.midi.reciever;
 
 import com.nikpappas.music.audio.ClipController;
 import com.nikpappas.music.audio.MixedClipController;
+import com.nikpappas.music.audio.SineSynth;
 
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.Receiver;
 import javax.sound.sampled.LineUnavailableException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 public class MixSynthReceiver implements Receiver, ClipController {
 
@@ -49,6 +52,8 @@ public class MixSynthReceiver implements Receiver, ClipController {
     @Override
     public void stop(int midinote) {
         clipControllers.forEach(r -> r.stop(midinote));
-
+    }
+    public List<GraphedSynth> getGraphedSynths(){
+        return clipControllers.stream().map(cc -> (GraphedSynth) cc).collect(toList());
     }
 }
