@@ -54,9 +54,8 @@ public class SineSynth implements MixedClipController, GraphedSynth {
             clip = AudioSystem.getClip();
             clips.put(midinote, clip);
         }
-        int wavelengths = 10;
+//        int wavelengths = 10;
         int sampleRate = 44100;
-        double timeIncrement = pow(sampleRate, -1);
         AudioFormat af = new AudioFormat(
                 sampleRate,
                 8,  // sample size in bits
@@ -65,43 +64,67 @@ public class SineSynth implements MixedClipController, GraphedSynth {
                 false  // bigendian
         );
 
+        double timeIncrement = Math.pow(sampleRate, -1);
         double frequency = frequencyForMidi(midinote);
 
-        double realCliplength = wavelengths * (sampleRate / frequency);
-        long clipLength = round((realCliplength));
-//        if(abs(clipLength-realCliplength)>0.33){
-//            clipLength++;
-//        }
-        System.out.println((wavelengths * sampleRate) / frequency);
+
+        double angle = 2 * frequency * PI;
+
+        double baseClipLength = sampleRate / 8.0; // 1/4s
+
+        long clipLength = round(baseClipLength);
+
         byte[] buf = new byte[2 * (int) clipLength];
         System.out.println(clipLength);
-        double angle = 2 * frequency * PI;
+        int finalLength = 0;
         for (int i = 0; i < clipLength; i++) {
             double time = (i * timeIncrement);
-            buf[i * 2] = (byte) (volume * waveGenerator.generate(angle, time));
-            buf[(i * 2) + 1] = buf[i * 2];
+            byte val = (byte) (volume * waveGenerator.generate(angle, time));
+            buf[i * 2] = val;
+            buf[(i * 2) + 1] = val;
+            if (val == -buf[2] && val < 0 && buf[i * 2 - 2] < val) {
+                finalLength = 2 * i + 2;
+            }
         }
-        System.out.println(buf[0]);
-        System.out.println(buf[2]);
-        System.out.println(buf[buf.length - 1]);
 
-        buffer = buf;
+//        System.out.println("finalLength " + finalLength);
+//        System.out.println("bufLength " + buf.length);
+//        System.out.println("buf[buf.length - 1] - " + buf[buf.length - 1]);
+//        System.out.println("buf[2*finalLength - 1]" + buf[2 * finalLength - 1]);
+
 
         try {
-            byte[] b = buf;
+            byte[] b = null;
+            if (finalLength > 1) {
+                b = Arrays.copyOfRange(buf, 0, finalLength);
+            } else {
+                b = buf;
+            }
+            buffer = b;
+            System.out.println("b.length " + b.length);
+            System.out.println(b[0]);
+            System.out.println(b[1]);
+            System.out.println(b[2]);
+            System.out.println(b[3]);
+            System.out.println(b[b.length - 3]);
+            System.out.println(b[b.length - 4]);
+            System.out.println(b[b.length - 1]);
+            System.out.println(b[b.length - 2]);
+            System.out.println(finalLength);
             AudioInputStream ais = new AudioInputStream(
                     new ByteArrayInputStream(b),
                     af,
-                    buf.length / 2);
+                    b.length / 2);
 
-            clip.addLineListener((a) -> {
-                System.out.println(a.getFramePosition());
-            });
-            System.out.println(clip.getLineInfo());
-            System.out.println(clip.getLineInfo());
+//            clip.addLineListener((a) -> {
+//                System.out.println(a.getFramePosition());
+//            });
+//            System.out.println(clip.getLineInfo());
+//            System.out.println(clip.getLineInfo());
             clip.open(ais);
             clip.setFramePosition(0);
-            Arrays.stream(clip.getControls()).forEach(System.out::println);
+
+            //            Arrays.stream(clip.getControls()).forEach(System.out::println);
 
 //            clip.setLoopPoints(Long.valueOf(clipLength / 2).intValue(), -1);
             clip.loop(Clip.LOOP_CONTINUOUSLY);
@@ -119,10 +142,7 @@ public class SineSynth implements MixedClipController, GraphedSynth {
         System.out.println("stop(" + midinote + ")");
         Clip clip = clips.get(midinote);
         if (clip != null) {
-            System.out.println(clip.getLevel());
-            while(abs(clip.getLevel())>10){
-            }
-
+            clip.flush();
             clip.stop();
             clip.close();
         }

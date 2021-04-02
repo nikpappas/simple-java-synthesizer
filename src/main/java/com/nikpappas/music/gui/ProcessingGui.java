@@ -6,6 +6,7 @@ import com.nikpappas.music.midi.reciever.GraphedSynth;
 import com.nikpappas.music.midi.reciever.MixSynthReceiver;
 import processing.core.PApplet;
 import processing.event.KeyEvent;
+import processing.event.MouseEvent;
 
 import java.awt.*;
 import java.util.List;
@@ -36,7 +37,7 @@ public class ProcessingGui extends PApplet {
 
     @Override
     public void settings() {
-        size(600, 400);
+        size(900, 800);
     }
 
 
@@ -62,10 +63,9 @@ public class ProcessingGui extends PApplet {
             int rectStartY = rectHeight * i;
             rect(0, rectStartY, width, rectHeight);
             byte[] buf = synths.get(i).getBuffer();
-
             if (buf != null) {
                 for (int j = 0; j < buf.length; j += 2) {
-                    point(j * width / buf.length, rectStartY + rectHeight / 2.0f + (buf[j] / ((float) 1.5f*MAX_VOL/synths.size())) * min(rectHeight / 4.0f, 200));
+                    point(15+j * (width-30) / buf.length, rectStartY + rectHeight / 2.0f + (buf[j] / ((float) 1.5f*MAX_VOL/synths.size())) * min(rectHeight / 4.0f, 200));
                 }
             }
         }
@@ -86,8 +86,15 @@ public class ProcessingGui extends PApplet {
         System.out.println("adding mew synth -- deetune:" + randomNumber);
         mixerReceiver.add(new SineSynth(
                 (angle, time) -> Long.valueOf(
-                        Math.round(Math.sin((angle * randomNumber) * time) * MAX_VOL))
+                        Math.round(Math.sin(angle * time +randomNumber) * MAX_VOL))
                         .byteValue()
         ));
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        System.out.println(e.getY());
+        int windowRatio = e.getY() / height;
+
     }
 }
