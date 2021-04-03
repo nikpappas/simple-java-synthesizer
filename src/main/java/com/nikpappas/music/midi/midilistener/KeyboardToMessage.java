@@ -1,7 +1,6 @@
 package com.nikpappas.music.midi.midilistener;
 
 import com.nikpappas.music.midi.reciever.DisplayReceiver;
-import com.nikpappas.music.midi.reciever.SynthReceiver;
 
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
@@ -20,27 +19,22 @@ import static java.lang.String.format;
  */
 public class KeyboardToMessage implements Runnable {
     private Receiver receiver;
+    private String midiDevice;
 
-    public KeyboardToMessage(Receiver receiver){
 
+    public KeyboardToMessage(Receiver receiver, String midiDevice) {
+        this.midiDevice = midiDevice;
         this.receiver = receiver;
+    }
+
+    public KeyboardToMessage(Receiver receiver) {
+        this(receiver, "DigitalKBD-1");
     }
 
     /**
      * See {@link MidiSystem} for other classes
      */
     private static final String TRANS_PROP_KEY = "javax.sound.midi.Transmitter";
-    private static final String SYNTH_PROP_KEY = "javax.sound.midi.Synthesizer";
-
-    /**
-     * Name values can have the class name, (see {@link MidiSystem}), the device
-     * name or both. Use a pound sign (#) to separate the class and device name.
-     * Get device names from the {@link MidiDeviceDisplay} program, or leave
-     * empty for default.<p>
-     * <p>
-     * {@code javax.sound.midi.Transmitter#USB Uno MIDI Interface}<br>
-     */
-    private static final String TRANS_DEV_NAME = format("%s#%s", TRANS_PROP_KEY, "DigitalKBD-1");
 
 
     @Override
@@ -71,6 +65,8 @@ public class KeyboardToMessage implements Runnable {
      * @return a specific transmitter object by setting the system property, otherwise the default
      */
     private Transmitter getTransmitter() {
+        final String TRANS_DEV_NAME = format("%s#%s", TRANS_PROP_KEY, midiDevice);
+
         if (!TRANS_DEV_NAME.isEmpty() && !"default".equalsIgnoreCase(TRANS_DEV_NAME)) {
             System.setProperty(TRANS_PROP_KEY, TRANS_DEV_NAME);
         }

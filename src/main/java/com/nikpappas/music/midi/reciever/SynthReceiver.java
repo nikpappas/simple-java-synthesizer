@@ -24,10 +24,6 @@ public class SynthReceiver implements Receiver {
     }
 
 
-    public static double squareTheSin(double val){
-        return val>0?1.0:-1.0;
-
-    }
 
     @Override
     public void send(MidiMessage message, long timeStamp) {

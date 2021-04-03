@@ -2,7 +2,7 @@ package com.nikpappas.music.midi.reciever;
 
 import com.nikpappas.music.audio.ClipController;
 import com.nikpappas.music.audio.MixedClipController;
-import com.nikpappas.music.audio.SineSynth;
+import com.nikpappas.music.audio.WaveGenerator;
 
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.Receiver;
@@ -38,6 +38,10 @@ public class MixSynthReceiver implements Receiver, ClipController {
 
     }
 
+    public MixedClipController remove(int i){
+        return clipControllers.remove(i);
+    }
+
     @Override
     public void play(int midinote) {
         clipControllers.forEach(r -> {
@@ -56,4 +60,25 @@ public class MixSynthReceiver implements Receiver, ClipController {
     public List<GraphedSynth> getGraphedSynths(){
         return clipControllers.stream().map(cc -> (GraphedSynth) cc).collect(toList());
     }
+
+    public void setWaveGenerator(int i, WaveGenerator waveGenerator){
+        MixedClipController controller = clipControllers.get(i);
+        controller.setWaveGenerator(waveGenerator);
+        controller.rebuffer();
+
+    }
+
+    public void setDetune(int i, double detune) {
+        MixedClipController controller = clipControllers.get(i);
+        clipControllers.get(i).setDetune(detune);
+        controller.rebuffer();
+
+    }
+    public void setVolume(int i, float volume) {
+        MixedClipController controller = clipControllers.get(i);
+        clipControllers.get(i).setVolume(volume);
+        controller.rebuffer();
+
+    }
+
 }
