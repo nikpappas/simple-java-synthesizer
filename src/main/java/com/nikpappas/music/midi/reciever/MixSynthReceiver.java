@@ -38,30 +38,38 @@ public class MixSynthReceiver implements Receiver, ClipController {
 
     }
 
-    public MixedClipController remove(int i){
+    public MixedClipController remove(int i) {
+        try {
+            clipControllers.get(i).close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return clipControllers.remove(i);
     }
 
     @Override
     public void play(int midinote) {
-        clipControllers.forEach(r -> {
+
+        for (int i = 0; i < clipControllers.size(); i++) {
+            System.out.println("cc" + i);
             try {
-                r.play(midinote);
+                clipControllers.get(i).play(midinote);
             } catch (LineUnavailableException e) {
                 e.printStackTrace();
             }
-        });
+        }
     }
 
     @Override
     public void stop(int midinote) {
         clipControllers.forEach(r -> r.stop(midinote));
     }
-    public List<GraphedSynth> getGraphedSynths(){
+
+    public List<GraphedSynth> getGraphedSynths() {
         return clipControllers.stream().map(cc -> (GraphedSynth) cc).collect(toList());
     }
 
-    public void setWaveGenerator(int i, WaveGenerator waveGenerator){
+    public void setWaveGenerator(int i, WaveGenerator waveGenerator) {
         MixedClipController controller = clipControllers.get(i);
         controller.setWaveGenerator(waveGenerator);
         controller.rebuffer();
@@ -74,6 +82,7 @@ public class MixSynthReceiver implements Receiver, ClipController {
         controller.rebuffer();
 
     }
+
     public void setVolume(int i, float volume) {
         MixedClipController controller = clipControllers.get(i);
         clipControllers.get(i).setVolume(volume);
