@@ -14,9 +14,9 @@ import static java.util.stream.Collectors.toList;
 
 public class MixSynthReceiver implements Receiver, ClipController {
 
-    private SynthReceiver synth = new SynthReceiver(this);
+    private final SynthReceiver synth = new SynthReceiver(this);
 
-    private List<MixedClipController> clipControllers = new ArrayList<>();
+    private final List<MixedClipController> clipControllers = new ArrayList<>();
 
     @Override
     public void send(MidiMessage message, long timeStamp) {

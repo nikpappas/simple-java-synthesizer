@@ -48,7 +48,7 @@ public class ProcessingGui extends PApplet {
 
     int harmonicCount = 1;
     public static final int CLOSE_MARGIN = 60;
-    private WaveGenerator[] waves = {WaveGenerator.SINE, WaveGenerator.SQUARE, WaveGenerator.TRI, WaveGenerator.SAT_SINE, WaveGenerator.SAW, new HarmonicsWaveGenerator(WaveGenerator.SINE), new HarmonicsWaveGenerator(WaveGenerator.SAW)};
+    private final WaveGenerator[] waves = {WaveGenerator.SINE, WaveGenerator.SQUARE, WaveGenerator.TRI, WaveGenerator.SAT_SINE, WaveGenerator.SAW, new HarmonicsWaveGenerator(WaveGenerator.SINE), new HarmonicsWaveGenerator(WaveGenerator.SAW)};
     private boolean pcKeyboard;
 
     // The minimum boilerplate code I could get to.

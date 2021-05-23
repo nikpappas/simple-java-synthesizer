@@ -18,8 +18,8 @@ import static java.lang.String.format;
  * @version 2017/06/17
  */
 public class KeyboardToMessage implements Runnable {
-    private Receiver receiver;
-    private String midiDevice;
+    private final Receiver receiver;
+    private final String midiDevice;
 
 
     public KeyboardToMessage(Receiver receiver, String midiDevice) {
