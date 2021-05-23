@@ -3,12 +3,7 @@ package com.nikpappas.music.midi.midilistener;
 import com.nikpappas.music.midi.reciever.DisplayReceiver;
 import com.nikpappas.music.midi.reciever.SynthReceiver;
 
-import javax.sound.midi.MidiMessage;
-import javax.sound.midi.MidiSystem;
-import javax.sound.midi.MidiUnavailableException;
-import javax.sound.midi.Receiver;
-import javax.sound.midi.Synthesizer;
-import javax.sound.midi.Transmitter;
+import javax.sound.midi.*;
 
 import static java.lang.String.format;
 
@@ -23,7 +18,9 @@ import static java.lang.String.format;
 public class KeyboardToSynth {
 
 
-    /** See {@link MidiSystem} for other classes */
+    /**
+     * See {@link MidiSystem} for other classes
+     */
     private static final String TRANS_PROP_KEY = "javax.sound.midi.Transmitter";
     private static final String SYNTH_PROP_KEY = "javax.sound.midi.Synthesizer";
 
@@ -32,7 +29,7 @@ public class KeyboardToSynth {
      * name or both. Use a pound sign (#) to separate the class and device name.
      * Get device names from the {@link MidiDeviceDisplay} program, or leave
      * empty for default.<p>
-     *
+     * <p>
      * {@code javax.sound.midi.Transmitter#USB Uno MIDI Interface}<br>
      * {@code javax.sound.midi.Synthesizer#Microsoft MIDI Mapper}<br>
      */
@@ -56,7 +53,7 @@ public class KeyboardToSynth {
         }
 
         // The synthesizer is your MIDI device, which needs to be opened
-        if (! synth.isOpen()) {
+        if (!synth.isOpen()) {
             try {
                 synth.open();
             } catch (MidiUnavailableException e) {
@@ -91,7 +88,7 @@ public class KeyboardToSynth {
      * @return a specific synthesizer object by setting the system property, otherwise the default
      */
     private Synthesizer getSynthesizer() {
-        if (! SYNTH_DEV_NAME.isEmpty() || ! "default".equalsIgnoreCase(SYNTH_DEV_NAME)) {
+        if (!SYNTH_DEV_NAME.isEmpty() || !"default".equalsIgnoreCase(SYNTH_DEV_NAME)) {
             System.setProperty(SYNTH_PROP_KEY, SYNTH_DEV_NAME);
         }
 
@@ -108,7 +105,7 @@ public class KeyboardToSynth {
      * @return a specific transmitter object by setting the system property, otherwise the default
      */
     private Transmitter getTransmitter() {
-        if (! TRANS_DEV_NAME.isEmpty() && ! "default".equalsIgnoreCase(TRANS_DEV_NAME)) {
+        if (!TRANS_DEV_NAME.isEmpty() && !"default".equalsIgnoreCase(TRANS_DEV_NAME)) {
             System.setProperty(TRANS_PROP_KEY, TRANS_DEV_NAME);
         }
 
