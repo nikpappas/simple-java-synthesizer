@@ -1,22 +1,73 @@
 package com.nikpappas.music.audio;
 
+import com.nikpappas.music.midi.reciever.GraphedSynth;
+
 import javax.sound.sampled.*;
 import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.nikpappas.music.MidiToFrequency.frequencyForMidi;
 import static java.lang.Math.*;
 
-public class SineSynth {
+public class SineSynth implements MixedClipController, GraphedSynth {
 
     private final Map<Integer, Clip> clips = new HashMap<>();
-    public static final int MAX_VOL = 127;
-    public static final WaveGenerator DEFAULT_WAVE_GENERATOR = (angle) -> Long.valueOf(
-            round(sin(angle) * MAX_VOL))
-            .byteValue();
+    private final Map<Integer, Clip> releaseClips = new HashMap<>();
 
-    private final WaveGenerator waveGenerator;
+    public static final int SAMPLE_RATE = 44100;
+    public static final double TIME_INCREMENT = Math.pow(SAMPLE_RATE, -1);
+
+    public static final double BASE_CLIP_LENGTH = SAMPLE_RATE / 8.0;
+    public static final AudioFormat AUDIO_FORMAT = new AudioFormat(
+            SAMPLE_RATE,
+            8,  // sample size in bits
+            2,  // channels
+            true,  // signed
+            false  // bigendian
+    );
+
+    public static final int MAX_VOL = 127;
+    public static final WaveGenerator DEFAULT_WAVE_GENERATOR = WaveGenerator.SINE;
+
+    private WaveGenerator waveGenerator;
+    private double detune;
+    private float volume = 1.0f;
+    private byte[] buffer;
+
+
+    @Override
+    public void setWaveGenerator(WaveGenerator waveGenerator) {
+        this.waveGenerator = waveGenerator;
+    }
+
+    @Override
+    public void setDetune(double detune) {
+        System.out.println(detune);
+        this.detune = detune;
+    }
+
+    @Override
+    public void rebuffer() {
+        clips.forEach((k, v) -> {
+            if (v.isRunning()) {
+                stop(k);
+                try {
+                    play(k);
+                } catch (LineUnavailableException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void setVolume(float volume) {
+        if (volume > 1) {
+            throw new IllegalArgumentException("Volume cannot be greater than 1");
+        }
+        this.volume = volume;
+    }
 
     public static void main(String[] args) throws LineUnavailableException {
         SineSynth app = new SineSynth();
@@ -29,7 +80,12 @@ public class SineSynth {
     }
 
     public SineSynth(WaveGenerator waveGenerator) {
+        this(waveGenerator, 0);
+    }
+
+    public SineSynth(WaveGenerator waveGenerator, double detune) {
         this.waveGenerator = waveGenerator;
+        this.detune = detune;
     }
 
     public void play(int midinote) throws LineUnavailableException {
@@ -42,35 +98,37 @@ public class SineSynth {
             clip = AudioSystem.getClip();
             clips.put(midinote, clip);
         }
-        int wavelengths = 40;
-        int sampleRate = 11025;
-        double timeIncrement = pow(sampleRate, -1);
-        AudioFormat af = new AudioFormat(
-                sampleRate,
-                8,  // sample size in bits
-                2,  // channels
-                true,  // signed
-                false  // bigendian
-        );
 
-        int maxVol = 127;
-        double frequency = frequencyForMidi(midinote);
+        double frequency = frequencyForMidi(midinote) * (1 + detune);
 
-        long clipLength = round(((double) wavelengths * sampleRate) / frequency);
-        byte[] buf = new byte[2 * (int) clipLength];
+
+        double angle = 2 * frequency * PI;
+
+
+        int clipLength = (int) round(BASE_CLIP_LENGTH) * (midinote < 50 ? 2 : 1);
+        byte[] buf = new byte[2 * clipLength];
         System.out.println(clipLength);
+        int finalLength = 0;
         for (int i = 0; i < clipLength; i++) {
-            double angle = (i * timeIncrement) * 2 * frequency * PI;
-            buf[i * 2] = waveGenerator.generate(angle);
-            buf[(i * 2) + 1] = buf[i * 2];
+            double time = (i * TIME_INCREMENT);
+            byte val = (byte) round(volume * waveGenerator.generate(angle, time));
+            buf[i * 2] = val;
+            buf[(i * 2) + 1] = val;
+            if (abs(val + buf[2]) < 2 && val < 0 && buf[i * 2 - 2] < val) {
+                finalLength = 2 * i + 2;
+            }
         }
 
+
         try {
-            byte[] b = buf;
+            byte[] b = finalLength > 1 ? Arrays.copyOfRange(buf, 0, finalLength) : buf;
+            buffer = b;
+            System.out.println("b.length " + b.length);
+
             AudioInputStream ais = new AudioInputStream(
                     new ByteArrayInputStream(b),
-                    af,
-                    buf.length / 2);
+                    AUDIO_FORMAT,
+                    b.length / 2);
 
             clip.open(ais);
             clip.setFramePosition(0);
@@ -89,12 +147,25 @@ public class SineSynth {
         System.out.println("stop(" + midinote + ")");
         Clip clip = clips.get(midinote);
         if (clip != null) {
+            clip.flush();
             clip.stop();
             clip.close();
         }
+
+    }
+
+    @Override
+    public byte[] getBuffer() {
+        return buffer;
     }
 
     public void close() {
+        releaseClips.forEach((i, c) -> {
+            if (c != null) {
+                c.stop();
+                c.close();
+            }
+        });
         clips.forEach((i, c) -> {
             if (c != null) {
                 c.stop();

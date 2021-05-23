@@ -2,12 +2,13 @@ plugins {
     id 'java'
 }
 
-group 'org.example'
-version '1.0-SNAPSHOT'
+group 'com.nikpappas'
+version '0.0.1-BETA'
 
 repositories {
     mavenCentral()
 }
+
 
 dependencies {
 
@@ -16,6 +17,27 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
+
 test {
     useJUnitPlatform()
+}
+jar {
+    manifest {
+        attributes "Main-Class": "com.nikpappas.music.gui.ProcessingGui"
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'com.nikpappas.music.gui.ProcessingGui'
+    }
+    archiveClassifier = "all"
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
 }

@@ -1,25 +1,29 @@
 package com.nikpappas.music.midi.reciever;
 
+import com.nikpappas.music.audio.ClipController;
 import com.nikpappas.music.audio.SineSynth;
 
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.Receiver;
 import javax.sound.sampled.LineUnavailableException;
 
-import static java.lang.Math.round;
-import static java.lang.Math.sin;
+import static com.nikpappas.music.audio.SineSynth.MAX_VOL;
+import static java.lang.Math.*;
 
 public class SynthReceiver implements Receiver {
-//    private SineSynth sine = new SineSynth();
+    private final ClipController controller;
 
-    private SineSynth sine = new SineSynth(a -> Long.valueOf(
-            round((.6 * sin(a) + .4 * squareTheSin(sin(a * 2))) * 127))
-            .byteValue());
-
-    public static double squareTheSin(double val){
-        return val>0?1.0:-1.0;
-
+    public SynthReceiver(){
+        this(new SineSynth((a, t) -> Long.valueOf(
+                round((.6 * sin(a) + .4 * sin(a * 2)) * MAX_VOL*min(sqrt(t)*2, 1)))
+                .byteValue()));
     }
+
+    public SynthReceiver(ClipController controller){
+        this.controller = controller;
+    }
+
+
 
     @Override
     public void send(MidiMessage message, long timeStamp) {
@@ -30,14 +34,14 @@ public class SynthReceiver implements Receiver {
         // 0xf0 thru 0xff)
         switch (leftNibble) {
             case 0x80:
-                sine.stop(byteToInt(bytes[1]));
+                controller.stop(byteToInt(bytes[1]));
                 break;
             case 0x90:
                 try {
                     if (bytes[2] == 0) {
-                        sine.stop(byteToInt(bytes[1]));
+                        controller.stop(byteToInt(bytes[1]));
                     } else {
-                        sine.play(byteToInt(bytes[1]));
+                        controller.play(byteToInt(bytes[1]));
                     }
                 } catch (LineUnavailableException e) {
                     e.printStackTrace();
@@ -51,7 +55,11 @@ public class SynthReceiver implements Receiver {
 
     @Override
     public void close() {
-        sine.close();
+        try {
+            controller.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private int byteToInt(byte b) {

@@ -5,8 +5,13 @@ import java.io.Closeable;
 
 import static javax.sound.midi.Sequence.*;
 
-public class MidiListener {
+public class MidiListener implements Runnable{
     public static void main(String[] args) {
+        MidiListener app = new MidiListener();
+        app.run();
+    }
+
+    public void run(){
         for (MidiDevice.Info a : MidiSystem.getMidiDeviceInfo()) {
             System.out.println(a);
         }
@@ -38,9 +43,7 @@ public class MidiListener {
 
         }
 
-
     }
-
     public static void close(AutoCloseable c) {
         try {
             if (c != null) {

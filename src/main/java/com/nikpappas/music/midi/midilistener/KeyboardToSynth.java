@@ -15,7 +15,7 @@ import static java.lang.String.format;
  * @author Knute Snortum
  * @version 2017/06/17
  */
-public class KeyboardToSynth {
+public class KeyboardToSynth implements Runnable{
 
 
     /**
@@ -41,7 +41,8 @@ public class KeyboardToSynth {
         new KeyboardToSynth().run();
     }
 
-    private void run() {
+    @Override
+    public void run() {
 
         // Get a transmitter and synthesizer from their device names
         // using system properties or defaults
